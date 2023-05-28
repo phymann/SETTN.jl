@@ -3,16 +3,19 @@ using JLD2
 using UnPack
 using FlexiMaps
 using LinearAlgebra
+using MKL
 
 include("mainSETTN.jl")
 include("mainED.jl")
 include("ham.jl")
 include("misc.jl")
 
-let
+let 
+    for maxdim = Int64.(floor.(map(x->2^x, [6:8;9.5])))
+        println("maxdim = $maxdim")
     # setup multiple threads
     # --------------------------------------------------------------------------------------
-    MKLthreads = 1
+    MKLthreads = 8
     if MKLthreads == 1
         stridedThreads = Sys.CPU_THREADS
     else
@@ -40,7 +43,8 @@ let
     nrmHnQ = false
     cutoff = 1e-16
     toldif = 1e-16
-    maxdim = 512
+    # maxdim = maxdim
+    @show maxdim
     oplev = 42
     symmQ = false
     ns = 12
@@ -85,4 +89,5 @@ let
     close(file)
     @show fname
     # --------------------------------------------------------------------------------------
+end
 end
