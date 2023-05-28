@@ -60,7 +60,7 @@ function getFe(lsTrHn, β, nrm0; kwargs...)
         if nrmHnQ
             sumls += lsTrHn[i]* (-β)^(i-1)
         else
-            sumls += convert(Float64, lsTrHn[i]* (-β)^(i-1)/factorial(big(i-1)))
+            sumls += convert(Float64, lsTrHn[i]* (-big(β))^(i-1)/factorial(big(i-1)))
         end
         feold = fe
         fe = fe0 - β^-1 * log(sumls)
