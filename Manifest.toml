@@ -2,7 +2,7 @@
 
 julia_version = "1.9.0"
 manifest_format = "2.0"
-project_hash = "1c5a6332842d18216c20fc7482b81592dc30bf94"
+project_hash = "27f96fea8f81415070e6653f8b0ce5a1e3dd42a4"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -788,6 +788,12 @@ weakdeps = ["ChainRulesCore", "ChangesOfVariables", "InverseFunctions"]
 
 [[deps.Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
+
+[[deps.MKL]]
+deps = ["Artifacts", "Libdl", "LinearAlgebra", "MKL_jll"]
+git-tree-sha1 = "99d923f343425a26eb4f1596d2a6a1118635d73a"
+uuid = "33e6dc65-8f57-5167-99aa-e5a354878fb2"
+version = "0.6.0"
 
 [[deps.MKL_jll]]
 deps = ["Artifacts", "IntelOpenMP_jll", "JLLWrappers", "LazyArtifacts", "Libdl", "Pkg"]
