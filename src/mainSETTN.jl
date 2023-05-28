@@ -18,13 +18,16 @@ function getlsTrHn(H::MPO, s; kwargs...)
         H0 /= nrm0
 
         lsTrHn = []
+        lsTrHn_lognrmtot = []
         push!(lsTrHn, tr(H0))
+        push!(lsTrHn_lognrmtot, 0)
 
         Hn = copy(H)
         Hn /= nrm0
         push!(lsTrHn, tr(Hn))
+        push!(lsTrHn_lognrmtot, 0)
 
-        nrmtot = 1.0
+        lognrmtot = 0
         for i = 2:nmax
             if oplev > 0
                 println("cal tr(Hn) for n = $i, nmax = $nmax")
@@ -35,19 +38,22 @@ function getlsTrHn(H::MPO, s; kwargs...)
             else
                 Hn, nrm = jwapply(H, Hn; kwargs...)
             end
-            nrmtot *= nrm
-            push!(lsTrHn, tr(Hn) * nrmtot)
+            lognrmtot += log(nrm)
+            push!(lsTrHn, tr(Hn))
+            push!(lsTrHn_lognrmtot, lognrmtot)
+            @show tr(Hn)
+            @show lognrmtot
         end
         file = jldopen(fname, "w")
-        @pack! file = lsTrHn, nrm0
+        @pack! file = lsTrHn, lsTrHn_lognrmtot, nrm0
         @show fname
     end
     close(file)
 
-    return lsTrHn, nrm0
+    return lsTrHn, lsTrHn_lognrmtot, nrm0
 end
 
-function getFe(lsTrHn, β, nrm0; kwargs...)
+function getFe(lsTrHn, lsTrHn_lognrmtot, β, nrm0; kwargs...)
     diftol = get(kwargs, :diftol, 1e-16)
     nrmHnQ = get(kwargs, :nrmHnQ, false)
 
@@ -57,10 +63,12 @@ function getFe(lsTrHn, β, nrm0; kwargs...)
 
     sumls = 0
     for i = 1:nmax
+        # NB! lsTrHn starts from H^0
         if nrmHnQ
             sumls += lsTrHn[i]* (-β)^(i-1)
         else
-            sumls += convert(Float64, lsTrHn[i]* (-big(β))^(i-1)/factorial(big(i-1)))
+            sumls += (-1)^(i-1) * lsTrHn[i] * exp(lsTrHn_lognrmtot[i] + (i-1)*log(big(β)) - log(factorial(big(i-1))))
+            # sumls += convert(Float64, lsTrHn[i])
         end
         feold = fe
         fe = fe0 - β^-1 * log(sumls)
@@ -70,6 +78,7 @@ function getFe(lsTrHn, β, nrm0; kwargs...)
         end
         if i == nmax
             println("SETTN NOT converges even at n = $i")
+            @show log(sumls)
         end
     end
 
@@ -107,7 +116,7 @@ end
 
 function mainSETTN(H::MPO, s, lsβ; kwargs...)
     oplev = get(kwargs, :oplev, 0)
-    lsTrHn, nrm0 = getlsTrHn(H, s; kwargs...)
+    lsTrHn, lsTrHn_lognrmtot, nrm0 = getlsTrHn(H, s; kwargs...)
 
     lsFE = copy(lsβ)
     nβ = length(lsβ)
@@ -115,7 +124,7 @@ function mainSETTN(H::MPO, s, lsβ; kwargs...)
         if oplev > 1
             println("cal Fe for β = $β, i = $idx / $nβ")
         end
-        lsFE[idx] = getFe(lsTrHn, β, nrm0; kwargs...)
+        lsFE[idx] = getFe(lsTrHn, lsTrHn_lognrmtot, β, nrm0; kwargs...)
     end
 
     return lsFE

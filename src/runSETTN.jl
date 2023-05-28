@@ -10,12 +10,12 @@ include("mainED.jl")
 include("ham.jl")
 include("misc.jl")
 
-let 
-    for maxdim = Int64.(floor.(map(x->2^x, [6:8;9.5])))
+let
+    for maxdim = [64]
         println("maxdim = $maxdim")
     # setup multiple threads
     # --------------------------------------------------------------------------------------
-    MKLthreads = 8
+    MKLthreads = 1
     if MKLthreads == 1
         stridedThreads = Sys.CPU_THREADS
     else
@@ -48,7 +48,7 @@ let
     oplev = 42
     symmQ = false
     ns = 12
-    lsβ = LogRange(0.42, 42, 32)
+    lsβ = LogRange(1, 100, 32)
     fname = "rslt/nmax$(nmax)_symm$(symmQ)_maxdim$(maxdim)"
     # save them all
     para = Dict{Symbol, Any}()
