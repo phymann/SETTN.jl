@@ -10,7 +10,9 @@ include("mainED.jl")
 include("ham.jl")
 include("misc.jl")
 
-let maxdim = maxdim
+let 
+    for maxdim = Int64.(floor.(map(x->2^x, [6:8;9.5])))
+        println("maxdim = $maxdim")
     # setup multiple threads
     # --------------------------------------------------------------------------------------
     MKLthreads = 8
@@ -41,7 +43,8 @@ let maxdim = maxdim
     nrmHnQ = false
     cutoff = 1e-16
     toldif = 1e-16
-    # maxdim = 512
+    # maxdim = maxdim
+    @show maxdim
     oplev = 42
     symmQ = false
     ns = 12
@@ -86,4 +89,5 @@ let maxdim = maxdim
     close(file)
     @show fname
     # --------------------------------------------------------------------------------------
+end
 end
