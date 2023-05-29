@@ -7,6 +7,7 @@ using MKL
 using Infiltrator
 
 include("mainSETTN.jl")
+include("ham.jl")
 include("misc.jl")
 
 function runSETTN(maxdim)
@@ -46,11 +47,6 @@ function runSETTN(maxdim)
     si = 6
     fname = "rslt/symm$(symmQ)_maxdim$(maxdim)"
     opnames = ["Sz"]
-
-    if hz ≠ 0
-        symmQ = false
-    end
-
     # save
     para = Dict{Symbol, Any}()
     @pack! para = nmax,
