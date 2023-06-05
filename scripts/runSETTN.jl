@@ -40,6 +40,7 @@ function runSETTN(maxdim)
     # setup parameters
     nmax = 512
     cutoff = 1e-16
+    SwpConvCrit = 1e-8
     symmQ = false
     ns = 8
     hz = .42
@@ -58,7 +59,8 @@ function runSETTN(maxdim)
     fname,
     opnames,
     hz,
-    si
+    si,
+    SwpConvCrit
 
     # ==============
     # main functions
@@ -72,7 +74,8 @@ function runSETTN(maxdim)
         nmax = nmax,
         cutoff = cutoff,
         maxdim = maxdim,
-        fname = fname
+        fname = fname,
+        SwpConvCrit = SwpConvCrit
     )
 
     # ============
