@@ -10,14 +10,14 @@ function getρ(H::MPO, s, β; kwargs...)
     Hn = copy(H)
     Hn /= nrm0
 
-    rho1::MPO = +(rho1, -β * Hn; alg="directsum")
+    rho1 = +(rho1, -β * Hn; alg="directsum")
 
     lognrmtot = 0
     for i = 2:nmax
         if i ≤ exactmax
-            Hn::MPO = apply(H, Hn; alg="zipup", kwargs...)
+            Hn = apply(H, Hn; alg="zipup", kwargs...)
         else
-            Hn::MPO = apply(H, Hn; alg="variational", kwargs...)
+            Hn = apply(H, Hn; alg="variational", kwargs...)
         end
         nrm = norm(Hn)
         Hn /= nrm
@@ -29,10 +29,10 @@ function getρ(H::MPO, s, β; kwargs...)
             rho1 = +(rho1, coeff*Hn; alg="directsum")
         else
             if nrm1 > nrm2
-                rho1::MPO = +(coeff/nrm1*Hn, rho1/nrm1; alg="variational", kwargs...)
+                rho1 = +(coeff/nrm1*Hn, rho1/nrm1; alg="variational", kwargs...)
                 rho1 *= nrm1
             else
-                rho1::MPO = +(rho1/nrm2, Hn; alg="variational", kwargs...)
+                rho1 = +(rho1/nrm2, Hn; alg="variational", kwargs...)
                 rho1 *= nrm2
             end
         end
