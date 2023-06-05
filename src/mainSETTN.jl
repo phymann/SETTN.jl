@@ -3,10 +3,10 @@ function getρ(H::MPO, s, β; kwargs...)
     exactmax = get(kwargs, :exactmax, 3)
 
     H0 = MPO(s, "Id")
-    # nrm0 = tr(H0)
     nrm0 = norm(H0)
     H0 /= nrm0
     rho1 = H0
+    @infiltrate norm(rho1) != 1
 
     Hn = copy(H)
     Hn /= nrm0
