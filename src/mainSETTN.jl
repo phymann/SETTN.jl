@@ -6,7 +6,6 @@ function getρ(H::MPO, s, β; kwargs...)
     nrm0 = norm(H0)
     H0 /= nrm0
     rho1 = H0
-    @infiltrate norm(rho1) != 1
 
     Hn = copy(H)
     Hn /= nrm0
@@ -41,10 +40,12 @@ function getρ(H::MPO, s, β; kwargs...)
         stopQ = abs((nrmnew-nrm1)/nrm1)
         if stopQ < 1e-16
             println("ρ converged at $i/$nmax")
+            flush(stdout)
             break
         end
         if i == nmax
             println("ρ NOT converged")
+            flush(stdout)
         end
     end
     return rho1, nrm0
@@ -55,6 +56,7 @@ function mainSETTN(H::MPO, s, lsβ, opnames::Vector{String}; kwargs...)
     lsfe = Float64[]
     for (idx, β) in enumerate(lsβ)
         println("for β = $β, i = $idx / $(length(lsβ))")
+        flush(stdout)
         rho1, nrm0 = getρ(H, s, β/2; kwargs...)
         push!(lsfe, -1/β * (2*log(nrm0) + 2* log(norm(rho1))))
         push!(lsex,expect(rho1, opnames))

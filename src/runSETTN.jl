@@ -12,6 +12,7 @@ include("mpo.jl")
 
 function runSETTN(maxdim)
     println("maxdim = $maxdim")
+    flush(stdout)
     # ======================
     # setup multiple threads
 
@@ -35,6 +36,7 @@ function runSETTN(maxdim)
     @show ITensors.Strided.get_num_threads()
     @show ITensors.using_threaded_blocksparse()
     println()
+    flush(stdout)
 
     # ================
     # setup parameters
@@ -79,6 +81,7 @@ function runSETTN(maxdim)
         println("ED file not found!")
         lsfeED, lsexED = simpleED(ns, hz, lsβ, si)
     end
+    flush(stdout)
 
     # fe_settn
     lsfe, lsex = mainSETTN(H, s, lsβ, opnames;
