@@ -15,7 +15,7 @@ function getρ(H::MPO, s, β; kwargs...)
 
     lognrmtot = 0
     for i = 2:nmax
-        if i < exactmax
+        if i ≤ exactmax
             Hn::MPO = apply(H, Hn; alg="zipup", kwargs...)
         else
             Hn::MPO = apply(H, Hn; alg="variational", kwargs...)
@@ -26,7 +26,7 @@ function getρ(H::MPO, s, β; kwargs...)
         coeff = Float64(((-1)^i*exp(lognrmtot + (i)*log(big(β)) - log(factorial(big(i))))))
         nrm1 = norm(rho1)
         nrm2 = coeff
-        if i < exactmax
+        if i ≤ exactmax
             rho1 = +(rho1, coeff*Hn; alg="directsum")
         else
             if nrm1 > nrm2

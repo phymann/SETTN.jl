@@ -15,15 +15,8 @@ function runSETTN(maxdim)
     # ======================
     # setup multiple threads
 
-    if read(`hostname`,String)[1:end-1] == "jw-mbp.local"
-        MKLthreads = 1
-        stridedThreads = Sys.CPU_THREADS
-    else
-        MKLthreads = Sys.CPU_THREADS
-        stridedThreads = 1
-    end
-    BLAS.set_num_threads(MKLthreads)
-    ITensors.Strided.set_num_threads(stridedThreads)
+    BLAS.set_num_threads(Sys.CPU_THREADS)
+    ITensors.Strided.set_num_threads(1)
     ITensors.enable_threaded_blocksparse(false)
 
     # show info
@@ -42,11 +35,14 @@ function runSETTN(maxdim)
     cutoff = 1e-16
     SwpConvCrit = 1e-8
     symmQ = false
-    ns = 8
+    L = 12
     hz = .42
     lsβ = LogRange(.1, 42, 8)
     si = 6
-    fname = "rslt/symm$(symmQ)_maxdim$(maxdim)"
+    fname = "rslt/SwpConvCrit=$(SwpConvCrit)_symm=$(symmQ)_maxdim$(maxdim)"
+    if !isdir("rslt")
+        mkdir("rslt")
+    end
     opnames = ["Sz"]
     # save
     para = Dict{Symbol, Any}()
@@ -54,7 +50,7 @@ function runSETTN(maxdim)
     cutoff,
     maxdim,
     symmQ,
-    ns,
+    L,
     lsβ,
     fname,
     opnames,
@@ -64,10 +60,10 @@ function runSETTN(maxdim)
 
     # ==============
     # main functions
-    s = siteinds("S=1/2", ns; conserve_qns = symmQ)
-    H = MPO(heisenberg(ns, hz), s)
+    s = siteinds("S=1/2", L; conserve_qns = symmQ)
+    H = MPO(heisenberg(L, hz), s)
 
-    lsfeED, lsexED = simpleED(ns, hz, lsβ, si)
+    lsfeED, lsexED = simpleED(L, hz, lsβ, si)
 
     # fe_settn
     lsfe, lsex = mainSETTN(H, s, lsβ, opnames;
