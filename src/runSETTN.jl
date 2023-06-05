@@ -8,6 +8,7 @@ using Infiltrator
 
 include("mainSETTN.jl")
 include("misc.jl")
+include("mpo.jl")
 
 function runSETTN(maxdim)
     println("maxdim = $maxdim")
@@ -37,14 +38,14 @@ function runSETTN(maxdim)
 
     # ================
     # setup parameters
-    nmax = 512
+    nmax = 1024
     cutoff = 1e-16
     symmQ = false
-    ns = 8
+    ns = 12
     hz = .42
-    lsβ = LogRange(.1, 42, 8)
+    lsβ = LogRange(1, 100, 8)
     si = 6
-    fname = "rslt/symm$(symmQ)_maxdim$(maxdim)"
+    fname = "rslt/L=$(ns)_S=$(symmQ)_MD=$(maxdim)"
     opnames = ["Sz"]
 
     if hz ≠ 0
@@ -69,14 +70,23 @@ function runSETTN(maxdim)
     s = siteinds("S=1/2", ns; conserve_qns = symmQ)
     H = MPO(heisenberg(ns, hz), s)
 
-    lsfeED, lsexED = simpleED(ns, hz, lsβ, si)
+    if isfile("rslt/ED_L=$(ns)_hz=$(hz)_si=$(si).jld2")
+        file = jldopen("rslt/ED_L=$(ns)_hz=$(hz)_si=$(si).jld2", "r")
+        @unpack lsfeED, lsexED = file
+        close(file)
+        println("ED file found!")
+    else
+        println("ED file not found!")
+        lsfeED, lsexED = simpleED(ns, hz, lsβ, si)
+    end
 
     # fe_settn
     lsfe, lsex = mainSETTN(H, s, lsβ, opnames;
         nmax = nmax,
         cutoff = cutoff,
         maxdim = maxdim,
-        fname = fname
+        fname = fname,
+        outputlevel = 0
     )
 
     # ============

@@ -22,7 +22,7 @@ function jwf(lsmaxdim)
         ylabel = L"\text{relative err of free energy}"
         )
         for maxdim in lsmaxdim
-            fn = "rslt/symmfalse_maxdim$maxdim"
+            fn = "rslt/L=12_S=false_MD=$maxdim"
             @show fn
             file = jldopen(fn*".jld2","r")
             @unpack lsex, lsexED, lsfe, lsfeED = file["rslt"]
@@ -40,9 +40,10 @@ function jwf(lsmaxdim)
             )
         end
         axislegend(ax, position = :rt)
-        axislegend(ax1, position = :rt)
+        axislegend(ax1, position = :lb)
 
         current_figure()
     end
-    with_theme(jwp, theme_web())
+    fig = with_theme(jwp, theme_web())
+    # savefig("plots/L12.pdf", fig)
 end
