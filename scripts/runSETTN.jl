@@ -6,9 +6,9 @@ using LinearAlgebra
 using MKL
 using Infiltrator
 
-include("mainSETTN.jl")
-include("ham.jl")
-include("misc.jl")
+include("src/mainSETTN.jl")
+include("src/mpo.jl")
+include("src/misc.jl")
 
 function runSETTN(maxdim)
     println("maxdim = $maxdim")

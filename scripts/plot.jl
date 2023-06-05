@@ -6,23 +6,26 @@ using Infiltrator
 
 function jwf(lsmaxdim)
     si = 6
+    L = 12
     function jwp()
         f = Figure(
             resolution = (1200, 600),
             fontsize = 24
         )
         ax = Axis(f[1,1],
-        ylabel = L"\langle S^z(i=%$(si)) \rangle",
+        ylabel = L"\text{Relative error of }\langle S^z(i=%$(si)) \rangle",
         yscale = log10,
-        xscale = log10
+        xscale = log10,
+        xlabel = L"T"
         )
         ax1 = Axis(f[1,2],
         yscale = log10,
         xscale = log10,
-        ylabel = L"\text{relative err of free energy}"
+        ylabel = L"\text{Relative error of }F",
+        xlabel = L"T"
         )
         for maxdim in lsmaxdim
-            fn = "rslt/symmfalse_maxdim$maxdim"
+            fn = "rslt/L=$(L)_S=false_MD=$maxdim"
             @show fn
             file = jldopen(fn*".jld2","r")
             @unpack lsex, lsexED, lsfe, lsfeED = file["rslt"]
@@ -40,9 +43,10 @@ function jwf(lsmaxdim)
             )
         end
         axislegend(ax, position = :rt)
-        axislegend(ax1, position = :rt)
+        axislegend(ax1, position = :lb)
 
         current_figure()
     end
-    with_theme(jwp, theme_web())
+    fig = with_theme(jwp, theme_web())
+    savefig("plots/L12.pdf", fig)
 end
