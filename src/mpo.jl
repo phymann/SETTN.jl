@@ -1,11 +1,3 @@
-using ITensors
-import ITensors: position!, contract, replacebond!, +, *, apply, expect
-# using ITensors.NDTensors: Algorithm
-using ITensors: AbstractMPS, AbstractProjMPO, nsite, OneITensor,
-site_range, leftlim, rightlim, setleftlim!, setrightlim!, checkflux,
-@debug_check, @printf, orthocenter, @timeit_debug, timer, set_nsite!, @Algorithm_str,
-promote_itensor_eltype, datatype, adapt
-
 """
     This ProjMPO computes and stores the projection of an
     MPO `M` into a basis defined by an MPO `M1`, leaving a
@@ -15,19 +7,18 @@ promote_itensor_eltype, datatype, adapt
 
     Drawing of the network represented by a ProjMPO `P(H)`,
     showing the case of `nsite(P)==2` and `position!(P,M,4)`
-    for an MPS `psi`:
+    for an MPO `M`:
 
      -        -        -                          -        -        -
     | |      | |      | |        |        |      | |      | |      | |
-      o--------o--------o--------o--------o--------o--------o--------o    M1
-      |        |        |        |        |        |        |        |
-       -        -        -                          -        -        -
-        |        |        |                          |        |        |
-
-    |        |        |                          |        |        |
-     -        -        -                          -        -        -
-      |        |        |                          |        |        |
-      o--------o--------o-                        -o--------o--------o    M*
+    | o------+-o------+-o--------o--------o------+-o------+-o------+-o    M1
+    | |      | |      | |        |        |      | |      | |      | |
+    |  -     |  -     |  -                       |  -     |  -     |  -
+    |   |    |   |    |   |                      |   |    |   |    |   |
+    |   |    |   |    |   |                      |   |    |   |    |   |
+     -  |     -  |     -  |                       -  |     -  |     -  |
+      | |      | |      | |                        | |      | |      | |
+      o-+------o-+------o-+---                  ---o-+------o-+------o |  M*
       | |      | |      | |                        | |      | |      | |
        -        -        -                          -        -        -
 
@@ -43,7 +34,7 @@ function _makeL!(P::AbstractProjMPO, M::MPO, k::Int)::Union{ITensor,Nothing}
     ll = max(ll, 0)
     L = lproj(P)
     while ll < k
-        L = (L * M[ll + 1]) * P.H[ll + 1]
+        L = (L * dag(M)[ll + 1]) * P.H[ll + 1]
         P.LR[ll + 1] = L
         ll += 1
     end
@@ -66,7 +57,7 @@ function _makeR!(P::AbstractProjMPO, M::MPO, k::Int)::Union{ITensor,Nothing}
     rl = min(rl, N + 1)
     R = rproj(P)
     while rl > k
-        R = (R * M[rl - 1]) * P.H[rl - 1]
+        R = (R * dag(M)[rl - 1]) * P.H[rl - 1]
         P.LR[rl - 1] = R
         rl -= 1
     end
@@ -92,9 +83,8 @@ end
     operation to succeed.
 """
 function position!(P::AbstractProjMPO, M::MPO, pos::Int)
-    # NB! must use conjugate of M
-    makeL!(P, dag(M), pos - 1)
-    makeR!(P, dag(M), pos + nsite(P))
+    makeL!(P, M, pos - 1)
+    makeR!(P, M, pos + nsite(P))
     return P
 end
 
@@ -114,16 +104,15 @@ function _varisum_sweeps(;
 end
 
 """
-    M20 is expected to be closer to M10+M20
+    NB! M20 is expected to be closer to M10+M20
 """
 function +(
     M10::MPO, M20::MPO, sweeps::Sweeps;
     nsite = 2,
     SwpConvCrit = 1e-16,
-    minswp = 3,
+    minswp = 5,
     kwargs...
 )
-
     @debug_check begin
         # Debug level checks
         # Enable with ITensors.enable_debug_checks()
@@ -138,7 +127,7 @@ function +(
 
     which_decomp::Union{String,Nothing} = get(kwargs, :which_decomp, nothing)
     svd_alg::String = get(kwargs, :svd_alg, "divide_and_conquer")
-    outputlevel::Int = get(kwargs, :outputlevel, 1)
+    outputlevel::Int = get(kwargs, :outputlevel, 0)
 
     M1 = copy(M10)
     if !isortho(M1) || orthocenter(M1) != 1
@@ -153,12 +142,15 @@ function +(
 
     N = length(M1)
     M3 = copy(M2)
+
     PM1 = ProjMPO(M1)
     PM1 = set_nsite!(PM1, nsite)
     PM1 = position!(PM1, M3, 1)
+
     PM2 = ProjMPO(M2)
     PM2 = set_nsite!(PM2, nsite)
     PM2 = position!(PM2, M3, 1)
+
     checknrm = zeros(nsweep(sweeps))
     for sw in 1:nsweep(sweeps)
         sw_time = @elapsed begin
@@ -221,20 +213,6 @@ function +(
                     )
                     flush(stdout)
                 end
-
-                if outputlevel >= 2
-                    @printf("Sweep %d, half %d, bond (%d,%d)\n", sw, ha, b, b + 1)
-                    @printf(
-                        "  Truncated using cutoff=%.1E maxdim=%d mindim=%d\n",
-                        cutoff(sweeps, sw),
-                        maxdim(sweeps, sw),
-                        mindim(sweeps, sw)
-                    )
-                    @printf(
-                        "  Trunc. err=%.2E, bond dimension %d\n", spec.truncerr, dim(linkind(M3, b))
-                    )
-                    flush(stdout)
-                end
             end
             checknrm[sw] = norm(M3)
         end
@@ -271,7 +249,7 @@ function +(::Algorithm"variational", x1::MPO, x2::MPO; kwargs...)
     return +(x1, x2, _varisum_sweeps(; kwargs...); kwargs...)
 end
 
-function contract(P::AbstractProjMPO)::ITensor
+function contract(P::AbstractProjMPO)
     itensor_map = Union{ITensor,OneITensor}[lproj(P)]
     append!(itensor_map, P.H[site_range(P)])
     push!(itensor_map, rproj(P))
@@ -286,12 +264,6 @@ function contract(P::AbstractProjMPO)::ITensor
     end
     return Hv
 end
-
-# # allows overloading `replacebond!` based on the projected
-# # MPO type. By default just calls `replacebond!` on the MPO.
-# function replacebond!(PH::AbstractProjMPO, M::MPO, b::Int, phi::ITensor; kwargs...)
-#     return replacebond!(M, b, phi; kwargs...)
-# end
 
 function ITensors.replacebond!(M::MPO, b::Int, phi::ITensor; kwargs...)
     ortho::String = get(kwargs, :ortho, "left")
@@ -340,27 +312,24 @@ end
 
     Drawing of the network represented by a Proj2MPOs `P(Ma, Mb)`,
     showing the case of `nsite(P)==2` and `position!(P,M,4)`
-    for an MPS `psi`:
+    for an MPO `M`:
 
      -        -        -                          -        -        -
     | |      | |      | |        |        |      | |      | |      | |
-      o--------o--------o--------o--------o--------o--------o--------o    Ma
-      |        |        |        |        |        |        |        |
-      o--------o--------o--------o--------o--------o--------o--------o    Mb
-      |        |        |        |        |        |        |        |
-       -        -        -                          -        -        -
-        |        |        |                          |        |        |
-
-    |        |        |                          |        |        |
-     -        -        -                          -        -        -
-      |        |        |                          |        |        |
-      o--------o--------o-                        -o--------o--------o    M
+    | o------+-o------+-o--------o--------o------+-o------+-o------+-o    Ma'
+    | |      | |      | |        |        |      | |      | |      | |
+    | o------+-o------+-o--------o--------o------+-o------+-o------+-o    Mb
+    | |      | |      | |        |        |      | |      | |      | |
+    |  -     |  -     |  -                       |  -     |  -     |  -
+    |   |    |   |    |   |                      |   |    |   |    |   |
+    |   |    |   |    |   |                      |   |    |   |    |   |
+    |   |    |   |    |   |                      |   |    |   |    |   |
+     -  |     -  |     -  |                       -  |     -  |     -  |
+      | |      | |      | |                        | |      | |      | |
+      o-+------o-+------o-+---                  ---o-+------o-+------o |  M*
       | |      | |      | |                        | |      | |      | |
        -        -        -                          -        -        -
-
-    and similar for M2-M3* case
 """
-
 mutable struct Proj2MPOs <: AbstractProjMPO
     lpos::Int
     rpos::Int
@@ -390,7 +359,7 @@ function _makeL!(P::Proj2MPOs, M::MPO, k::Int)::Union{ITensor,Nothing}
     ll = max(ll, 0)
     L = lproj(P)
     while ll < k
-        L = ((L * P.Ma[ll + 1]) * P.Mb[ll + 1]) * M[ll + 1]
+        L = ((L * P.Ma[ll + 1]) * P.Mb[ll + 1]) * dag(M)[ll + 1]
         P.LR[ll + 1] = L
         ll += 1
     end
@@ -413,7 +382,7 @@ function _makeR!(P::Proj2MPOs, M::MPO, k::Int)::Union{ITensor,Nothing}
     rl = min(rl, N + 1)
     R = rproj(P)
     while rl > k
-        R = ((R * P.Ma[rl - 1]) * P.Mb[rl - 1]) * M[rl - 1]
+        R = ((R * P.Ma[rl - 1]) * P.Mb[rl - 1]) * dag(M)[rl - 1]
         P.LR[rl - 1] = R
         rl -= 1
     end
@@ -428,13 +397,9 @@ end
 
 function contract(P::Proj2MPOs)::ITensor
     itensor_map = Union{ITensor,OneITensor}[lproj(P)]
-    for (idx, i) in enumerate(site_range(P))
-        if idx == 1
-            append!(itensor_map, [P.Ma[i], P.Mb[i]])
-        else
-            push!(itensor_map, P.Ma[i])
-            push!(itensor_map, P.Mb[i])
-        end
+    for i in site_range(P)
+        push!(itensor_map, P.Ma[i])
+        push!(itensor_map, P.Mb[i])
     end
     push!(itensor_map, rproj(P))
 
@@ -450,12 +415,12 @@ function contract(P::Proj2MPOs)::ITensor
 end
 
 """
-    M20 is expected to be closer to M10*M20
+    NB! M20 is expected to be closer to M10*M20
 """
-function ITensors.contract(M10::MPO, M20::MPO, sweeps::Sweeps;
+function contract(M10::MPO, M20::MPO, sweeps::Sweeps;
     nsite = 2,
     SwpConvCrit = 1e-16,
-    minswp = 3,
+    minswp = 5,
     kwargs...
 )
     @debug_check begin
@@ -472,7 +437,7 @@ function ITensors.contract(M10::MPO, M20::MPO, sweeps::Sweeps;
 
     which_decomp::Union{String,Nothing} = get(kwargs, :which_decomp, nothing)
     svd_alg::String = get(kwargs, :svd_alg, "divide_and_conquer")
-    outputlevel::Int = get(kwargs, :outputlevel, 1)
+    outputlevel::Int = get(kwargs, :outputlevel, 0)
 
     M1 = copy(M10)
     if !isortho(M1) || orthocenter(M1) != 1
@@ -549,27 +514,6 @@ function ITensors.contract(M10::MPO, M20::MPO, sweeps::Sweeps;
                     )
                     flush(stdout)
                 end
-
-                @debug_check begin
-                    checkflux(M1)
-                    checkflux(M2)
-                    checkflux(M3)
-                    checkflux(PM)
-                end
-
-                if outputlevel >= 2
-                    @printf("Sweep %d, half %d, bond (%d,%d)\n", sw, ha, b, b + 1)
-                    @printf(
-                        "  Truncated using cutoff=%.1E maxdim=%d mindim=%d\n",
-                        cutoff(sweeps, sw),
-                        maxdim(sweeps, sw),
-                        mindim(sweeps, sw)
-                    )
-                    @printf(
-                        "  Trunc. err=%.2E, bond dimension %d\n", spec.truncerr, dim(linkind(M3, b))
-                    )
-                    flush(stdout)
-                end
             end # for (b, ha) in sweepnext(N)
             checknrm[sw] = norm(M3)
         end # for sw in 1:nsweep(sweeps)
@@ -606,96 +550,92 @@ function ITensors.contract(::Algorithm"variational", x1::MPO, x2::MPO; kwargs...
     return contract(x1, x2, _varisum_sweeps(; kwargs...); kwargs...)
 end
 
-"""
-    expect(M::MPO, op::AbstractString...; kwargs...)
-    expect(M::MPO, op::Matrix{<:Number}...; kwargs...)
-    expect(M::MPO, ops; kwargs...)
+# """
+#     expect(M::MPO, op::AbstractString...; kwargs...)
+#     expect(M::MPO, op::Matrix{<:Number}...; kwargs...)
+#     expect(M::MPO, ops; kwargs...)
 
-Given an MPO `M`, typically viewed as a density matrix,
-and a single operator name, returns
-a vector of the expected value of the operator on
-each site of the MPO.
+# Given an MPO `M`, typically viewed as a density matrix,
+# and a single operator name, returns
+# a vector of the expected value of the operator on
+# each site of the MPO.
 
-If multiple operator names are provided, returns a tuple
-of expectation value vectors.
+# If multiple operator names are provided, returns a tuple
+# of expectation value vectors.
 
-If a container of operator names is provided, returns the
-same type of container with names replaced by vectors
-of expectation values.
+# If a container of operator names is provided, returns the
+# same type of container with names replaced by vectors
+# of expectation values.
 
-# Optional Keyword Arguments
+# # Optional Keyword Arguments
 
-  - `sites = 1:length(psi)`: compute expected values only for sites in the given range
+#   - `sites = 1:length(psi)`: compute expected values only for sites in the given range
 
-# Examples
+# # Examples
 
-```julia
-N = 10
+# ```julia
+# N = 10
 
-s = siteinds("S=1/2", N)
-rho = MPO(s, fill("Id",N)) # infinite-temperature density matrix
-Z = expect(rho, "Sz") # compute for all sites
-Z = expect(rho, "Sz"; sites=2:4) # compute for sites 2,3,4
-Z3 = expect(rho, "Sz"; sites=3)  # compute for site 3 only (output will be a scalar)
-XZ = expect(rho, ["Sx", "Sz"]) # compute Sx and Sz for all sites
-Z = expect(rho, [1/2 0; 0 -1/2]) # same as expect(rho,"Sz")
+# s = siteinds("S=1/2", N)
+# rho = MPO(s, fill("Id",N)) # infinite-temperature density matrix
+# Z = expect(rho, "Sz") # compute for all sites
+# Z = expect(rho, "Sz"; sites=2:4) # compute for sites 2,3,4
+# Z3 = expect(rho, "Sz"; sites=3)  # compute for site 3 only (output will be a scalar)
+# XZ = expect(rho, ["Sx", "Sz"]) # compute Sx and Sz for all sites
+# Z = expect(rho, [1/2 0; 0 -1/2]) # same as expect(rho,"Sz")
 
-s = siteinds("Electron", N)
-rho = MPO(s, fill("Id",N)) # infinite-temperature density matrix
-dens = expect(rho, "Ntot")
-updens, dndens = expect(rho, ["Nup", "Ndn"]) # pass more than one operator
-```
-"""
-function expect(M::MPO, ops; kwargs...)
-  M = copy(M)
-  N = length(M)
-  ElT = promote_itensor_eltype(M)
-  s = firstsiteinds(M) # only unprimed site indices needed
+# s = siteinds("Electron", N)
+# rho = MPO(s, fill("Id",N)) # infinite-temperature density matrix
+# dens = expect(rho, "Ntot")
+# updens, dndens = expect(rho, ["Nup", "Ndn"]) # pass more than one operator
+# ```
+# """
+# function expect(M::MPO, ops::Vector{String}; kwargs...)
+#     M = copy(M)
+#     N = length(M)
+#     ElT = promote_itensor_eltype(M)
+#     s = firstsiteinds(M) # only unprimed site indices needed
+#     s = dag(s) # for symm case
 
-  if haskey(kwargs, :site_range)
-    @warn "The `site_range` keyword arg. to `expect` is deprecated: use the keyword `sites` instead"
-    sites = kwargs[:site_range]
-  else
-    sites = get(kwargs, :sites, 1:N)
-  end
+#     sites = get(kwargs, :sites, 1:N)
 
-  site_range = (sites isa AbstractRange) ? sites : collect(sites)
-  Ns = length(site_range)
-  start_site = first(site_range)
+#     site_range = (sites isa AbstractRange) ? sites : collect(sites)
+#     Ns = length(site_range)
+#     start_site = first(site_range)
 
-  el_types = map(o -> ishermitian(op(o, s[start_site])) ? real(ElT) : ElT, ops)
+#     el_types = map(o -> ishermitian(op(o, s[start_site])) ? real(ElT) : ElT, ops)
 
-  orthogonalize!(M, start_site)
-  norm2_M = inner(M[start_site], M[start_site])
+#     orthogonalize!(M, start_site)
+#     norm2_M = inner(M[start_site], M[start_site])
 
-  ex = map((o, el_t) -> zeros(el_t, Ns), ops, el_types)
-  for (entry, j) in enumerate(site_range)
-    orthogonalize!(M, j)
-    for (n, opname) in enumerate(ops)
-      oⱼ = adapt(datatype(M[j]), op(opname, s[j]))
-      val = inner(M[j], apply(oⱼ, M[j])) / norm2_M
-      ex[n][entry] = (el_types[n] <: Real) ? real(val) : val
-    end
-  end
+#     ex = map((o, el_t) -> zeros(el_t, Ns), ops, el_types)
+#     for (entry, j) in enumerate(site_range)
+#         orthogonalize!(M, j)
+#         for (n, opname) in enumerate(ops)
+#             oⱼ = adapt(datatype(M[j]), op(opname, s[j]))
+#             val = inner(M[j], apply(oⱼ, M[j])) / norm2_M
+#             ex[n][entry] = (el_types[n] <: Real) ? real(val) : val
+#         end
+#     end
 
-  if sites isa Number
-    return map(arr -> arr[1], ex)
-  end
-  return ex
-end
+#     if sites isa Number
+#         return map(arr -> arr[1], ex)
+#     end
+#     return ex
+# end
 
-function expect(M::MPO, op::AbstractString; kwargs...)
-  return first(expect(M, (op,); kwargs...))
-end
+# function expect(M::MPO, op::AbstractString; kwargs...)
+#     return first(expect(M, [op]; kwargs...))
+# end
 
-function expect(M::MPO, op::Matrix{<:Number}; kwargs...)
-  return first(expect(M, (op,); kwargs...))
-end
+# function expect(M::MPO, op::Matrix{<:Number}; kwargs...)
+#     return first(expect(M, [op]; kwargs...))
+# end
 
-function expect(M::MPO, op1::AbstractString, ops::AbstractString...; kwargs...)
-  return expect(M, (op1, ops...); kwargs...)
-end
+# function expect(M::MPO, op1::AbstractString, ops::AbstractString...; kwargs...)
+#     return expect(M, (op1, ops...); kwargs...)
+# end
 
-function expect(M::MPO, op1::Matrix{<:Number}, ops::Matrix{<:Number}...; kwargs...)
-  return expect(M, (op1, ops...); kwargs...)
-end
+# function expect(M::MPO, op1::Matrix{<:Number}, ops::Matrix{<:Number}...; kwargs...)
+#     return expect(M, (op1, ops...); kwargs...)
+# end

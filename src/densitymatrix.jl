@@ -1,6 +1,13 @@
-function getρ(H::MPO, s, β; kwargs...)
-    nmax = get(kwargs, :nmax, 1024)
+"""
+    input `β`
+    return the initial density matrix MPO `ρ` at `β`
+"""
+function getρ(H::MPO, β::Float64; kwargs...)
+    maxord = get(kwargs, :maxord, 1024)
     exactmax = get(kwargs, :exactmax, 3)
+    stop_tol = get(kwargs, :stop_tol, 1e-16)
+    s = firstsiteinds(H)
+    s = dag(s) # for symm case
 
     H0 = MPO(s, "Id")
     nrm0 = norm(H0)
@@ -13,7 +20,7 @@ function getρ(H::MPO, s, β; kwargs...)
     rho1 = +(rho1, -β * Hn; alg="directsum")
 
     lognrmtot = 0
-    for i = 2:nmax
+    for i = 2:maxord
         if i ≤ exactmax
             Hn = apply(H, Hn; alg="zipup", kwargs...)
         else
@@ -23,11 +30,13 @@ function getρ(H::MPO, s, β; kwargs...)
         Hn /= nrm
         lognrmtot += log(nrm)
         coeff = Float64(((-1)^i*exp(lognrmtot + (i)*log(big(β)) - log(factorial(big(i))))))
+        # @show coeff
         nrm1 = norm(rho1)
         nrm2 = coeff
         if i ≤ exactmax
             rho1 = +(rho1, coeff*Hn; alg="directsum")
         else
+            # NB! The second MPO is expected to be closer to the resulting MPO
             if nrm1 > nrm2
                 rho1 = +(coeff/nrm1*Hn, rho1/nrm1; alg="variational", kwargs...)
                 rho1 *= nrm1
@@ -37,29 +46,23 @@ function getρ(H::MPO, s, β; kwargs...)
             end
         end
         nrmnew = norm(rho1)
+        # @show nrmnew
         stopQ = abs((nrmnew-nrm1)/nrm1)
-        if stopQ < 1e-16
-            println("ρ converged at $i/$nmax")
-            flush(stdout)
+        if stopQ < stop_tol
+            println("ρ converged at $i/$maxord")
             break
         end
-        if i == nmax
+        if i == maxord
             println("ρ NOT converged")
-            flush(stdout)
         end
     end
     return rho1, nrm0
 end
 
-function mainSETTN(H::MPO, s, lsβ, opnames::Vector{String}; kwargs...)
-    lsex = []
-    lsfe = Float64[]
-    for (idx, β) in enumerate(lsβ)
-        println("for β = $β, i = $idx / $(length(lsβ))")
-        flush(stdout)
-        rho1, nrm0 = getρ(H, s, β/2; kwargs...)
-        push!(lsfe, -1/β * (2*log(nrm0) + 2* log(norm(rho1))))
-        push!(lsex,expect(rho1, opnames))
-    end
-    return lsfe, lsex
+"""
+    input ρ(β/2) and β
+    return free energy at β via bilayer trick
+"""
+function getFe(rho::MPO, β::Float64, nrm0::Float64)
+    return -1/β * (2*log(nrm0) + 2*log(norm(rho)))
 end

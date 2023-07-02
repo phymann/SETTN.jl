@@ -21,10 +21,10 @@
     <frac|H<rsup|2>|2!*c>+\<cdots\>|]>.>>>>
   </eqnarray*>
 
-  Let's consider the density matrix itself:
+  And the density matrix itself reads
 
   <\eqnarray*>
-    <tformat|<table|<row|<cell|\<rho\>>|<cell|=>|<cell|e<rsup|-\<beta\>H>>>|<row|<cell|>|<cell|=>|<cell|1+<around*|(|-\<beta\>|)>H+<frac|<around*|(|-\<beta\>|)><rsup|2>|2!>H<rsup|2>+\<cdots\>>>|<row|<cell|>|<cell|=>|<cell|c\<times\><around*|[|<frac|1|c>+<around*|(|-\<beta\>|)><frac|H|c>+<frac|<around*|(|-\<beta\>|)><rsup|2>|2!><frac|H<rsup|2>|c>+\<cdots\>|]>>>>>
+    <tformat|<table|<row|<cell|\<rho\>>|<cell|=>|<cell|e<rsup|-\<beta\>H>>>|<row|<cell|>|<cell|=>|<cell|1+<around*|(|-\<beta\>|)>H+<frac|<around*|(|-\<beta\>|)><rsup|2>|2!>H<rsup|2>+\<cdots\>>>|<row|<cell|>|<cell|=>|<cell|c\<times\><around*|[|<frac|1|c>+<around*|(|-\<beta\>|)><frac|H|c>+<frac|<around*|(|-\<beta\>|)><rsup|2>|2!><frac|H<rsup|2>|c>+\<cdots\>|]>.>>>>
   </eqnarray*>
 
   \;
@@ -34,12 +34,9 @@
 
 <\initial>
   <\collection>
+    <associate|page-height|auto>
     <associate|page-medium|paper>
+    <associate|page-type|letter>
+    <associate|page-width|auto>
   </collection>
 </initial>
-
-<\references>
-  <\collection>
-    <associate|auto-1|<tuple|1|?>>
-  </collection>
-</references>
