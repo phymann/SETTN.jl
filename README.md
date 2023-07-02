@@ -33,11 +33,11 @@ function getFe(rho::MPO, β::Float64, nrm0::Float64)
 
 One may check the example given in the `test` folder.
 
-> Note This package is mainly used for other more advanced thermal tensor network algorithm, such as XTRG (to be implemented) and [tanTRG.jl](https://github.com/phymann/tanTRG.jl).
+> Note This package is mainly used for other more advanced thermal tensor network algorithms, such as [XTRG](https://link.aps.org/doi/10.1103/PhysRevX.8.031082) (to be implemented) and [tanTRG.jl](https://github.com/phymann/tanTRG.jl).
 
 ## Details
 
-Two-site variational MPO sum and product, such as the one used in [PRB **95**, 161104]((https://doi.org/10.1103/PhysRevB.95.161104)) and [PRX **8**, 031082](https://doi.org/10.1103/PhysRevX.8.031082), is implemented.
+Two-site variational MPO sum and product used in [PRB **95**, 161104]((https://doi.org/10.1103/PhysRevB.95.161104)) and [PRX **8**, 031082](https://doi.org/10.1103/PhysRevX.8.031082), is implemented.
 
 ## TODO
 
