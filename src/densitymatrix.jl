@@ -1,6 +1,6 @@
 """
-    input `β`
-    return the initial density matrix MPO `ρ` at `β`
+    input: β and H
+    output: ρ(β)
 """
 function getρ(H::MPO, β::Float64; kwargs...)
     maxord = get(kwargs, :maxord, 1024)
@@ -60,8 +60,8 @@ function getρ(H::MPO, β::Float64; kwargs...)
 end
 
 """
-    input ρ(β/2) and β
-    return free energy at β via bilayer trick
+    input: ρ(β/2) and β
+    output: Fe(β)
 """
 function getFe(rho::MPO, β::Float64, nrm0::Float64)
     return -1/β * (2*log(nrm0) + 2*log(norm(rho)))

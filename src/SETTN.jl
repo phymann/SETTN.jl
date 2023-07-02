@@ -40,6 +40,6 @@ using ITensors.NDTensors:
 include("mpo.jl")
 include("densitymatrix.jl")
 
-export getρ, expect, getFe
+export getρ, getFe
 
 end # module SETTN
