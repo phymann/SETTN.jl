@@ -223,11 +223,11 @@ version = "1.14.0+0"
 
 [[deps.ITensors]]
 deps = ["Adapt", "BitIntegers", "ChainRulesCore", "Compat", "Dictionaries", "Functors", "HDF5", "IsApprox", "KrylovKit", "LinearAlgebra", "LinearMaps", "NDTensors", "PackageCompiler", "Pkg", "Printf", "Random", "Requires", "SerializedElementArrays", "SimpleTraits", "StaticArrays", "Strided", "TimerOutputs", "TupleTools", "Zeros", "ZygoteRules"]
-git-tree-sha1 = "3e342cc817aaf54ad77cf469193ff5d9a05e2674"
-repo-rev = "minorBugFix"
-repo-url = "https://github.com/phymann/ITensors.jl.git"
+git-tree-sha1 = "46f5c8e1cff62f230084f138a4be78b5bc01e5f1"
+repo-rev = "main"
+repo-url = "https://github.com/phymann/ITensors.jl/"
 uuid = "9136182c-28ba-11e9-034c-db9fb085ebd5"
-version = "0.3.34"
+version = "0.3.35"
 
 [[deps.Indexing]]
 git-tree-sha1 = "ce1566720fd6b19ff3411404d4b977acd4814f9f"

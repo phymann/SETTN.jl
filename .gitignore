@@ -1,0 +1,5 @@
+.DS_Store
+plot_scripts/
+nohup*
+rslt/
+plots/
