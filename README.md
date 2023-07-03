@@ -37,9 +37,8 @@ One may check the example given in the `test` folder.
 
 ## Details
 
-Two-site variational MPO sum and product used in [PRB **95**, 161104]((https://doi.org/10.1103/PhysRevB.95.161104)) and [PRX **8**, 031082](https://doi.org/10.1103/PhysRevX.8.031082), is implemented.
+Two-site variational MPO sum and product used in [PRB **95**, 161104](https://doi.org/10.1103/PhysRevB.95.161104) and [PRX **8**, 031082](https://doi.org/10.1103/PhysRevX.8.031082), is implemented.
 
 ## TODO
 
 - Implement a more numerically stable MPO product, such as the one given in [PRB **102**, 035147](https://doi.org/10.1103/PhysRevB.102.035147)
-- Make two-site variational MPO sum and product available for [`ITensors.jl`](https://github.com/ITensor/ITensors.jl) package
