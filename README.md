@@ -5,7 +5,7 @@ The series-expansion thermal tensor network (SETTN) algorithm [[PRB **95**, 1611
 ## Installation
 
 ```julia
-] add SETTN
+] add https://github.com/phymann/SETTN.jl
 ```
 
 ## Usage
